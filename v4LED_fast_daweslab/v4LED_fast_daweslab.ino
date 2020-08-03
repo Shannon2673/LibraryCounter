@@ -1,3 +1,12 @@
+
+#include <stdint.h>
+#include <Wire.h>
+#include "LIDARLite_v4LED.h"
+#include "AdafruitIO_ESP8266.h"
+#include "config.h"
+
+
+
 /*------------------------------------------------------------------------------
 
   LIDARLite Arduino Library
@@ -33,9 +42,7 @@
 
 ------------------------------------------------------------------------------*/
 
-#include <stdint.h>
-#include <Wire.h>
-#include "LIDARLite_v4LED.h"
+
 
 LIDARLite_v4LED myLidarLite;
 
@@ -43,6 +50,35 @@ LIDARLite_v4LED myLidarLite;
 
 #define MonitorPin    16
 #define TriggerPin    2
+
+
+//----------------------------------------
+// SG: details for counter feed
+// initializes count to be uploaded
+int count = 0;
+
+// set up the 'counter' feed
+AdafruitIO_Feed *counter = io.feed("library_counter");
+
+// establish the server
+WifiServer server(LISTEN_PORT);
+
+//----------------------------------------
+//SG: details for moving average
+
+#define WINDOW_SIZE 50
+#define error_allowance = 20;
+#define end_of_door = 500;
+
+// SG: These values worked decently okay for me, but that has been with me walking slowly
+// and aware of the sensor so they could use some tuning
+
+int index = 0;
+int value = 0;
+int sum = 0;
+int readings[WINDOW_SIZE];
+int averaged = 0;
+int last_average = 0;
 
 //---------------------------------------------------------------------
 void setup()
@@ -136,7 +172,35 @@ void loop()
     if (newDistance)
     {
         if(distance < 65000){ // AMCD: added to stop sending max-distance values
-            Serial.println(distance); // print measurement to serial terminal
+          //-------------------------------------------------------------------
+// SG: Moving Average for distance data
+// While we are looping to check for distance data, a moving average
+// can be calculated to remove noise from our data to better determine
+// when to count an entry or exit
+
+  sum = sum - READINGS[INDEX];       // will remove the last entry from the sum list
+  last_average = averaged            // establishes last average
+  value = distance;                  // Read the next sensor value
+  readings[index] = value;           // Add the new distance to window
+  sum = sum + value;                 // add new distance to sum
+  index = (index+1) % WINDOW_SIZE;   // Increment the index, and wrap to 0 if it exceeds the window size
+
+  averaged = sum / WINDOW_SIZE;      // Divide the sum of the window by the window size for the result
+
+  Serial.print(distance);
+  Serial.print(",");
+  Serial.println(averaged);
+
+  //----------------------------------------
+  // SG: counter conditions based on running average
+
+  if (averaged < end_of_door && last_average > averaged + error_allowance )
+  // values need to be tuned at start of file
+  
+  { // conditions are met to add to counter
+  count ++;
+  // 3 second delay
+  delay(3000); }    
         }
     }
 }
