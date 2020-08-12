@@ -67,8 +67,8 @@ WifiServer server(LISTEN_PORT);
 //SG: details for moving average
 
 #define WINDOW_SIZE 50
-#define error_allowance = 20;
-#define end_of_door = 500;
+#define error_allowance  20;
+#define end_of_door  500;
 
 // SG: These values worked decently okay for me, but that has been with me walking slowly
 // and aware of the sensor so they could use some tuning
@@ -178,7 +178,7 @@ void loop()
 // can be calculated to remove noise from our data to better determine
 // when to count an entry or exit
 
-  sum = sum - READINGS[INDEX];       // will remove the last entry from the sum list
+  sum = sum - READINGS[index];       // will remove the last entry from the sum list
   last_average = averaged            // establishes last average
   value = distance;                  // Read the next sensor value
   readings[index] = value;           // Add the new distance to window
